@@ -1,10 +1,16 @@
 class ProductsController < ApplicationController
-  before_action :set_product, only: [:show, :edit, :update, :destroy]
+  before_action :authenticate_user!, except: [:index]
+  
+  before_action :set_product, only: [:show, :edit, :update, :destroy, :new_like]
 
   # GET /products
   # GET /products.json
   def index
-    @products = Product.all
+    if user_signed_in?
+      @products = Product.where(user: current_user)
+    else
+      @products = Product.all
+    end
   end
 
   # GET /products/1
@@ -25,7 +31,7 @@ class ProductsController < ApplicationController
   # POST /products.json
   def create
     @product = Product.new(product_params)
-
+    @product.user = current_user
     respond_to do |format|
       if @product.save
         format.html { redirect_to @product, notice: 'Product was successfully created.' }
@@ -58,6 +64,17 @@ class ProductsController < ApplicationController
     respond_to do |format|
       format.html { redirect_to products_url, notice: 'Product was successfully destroyed.' }
       format.json { head :no_content }
+    end
+  end
+
+  def new_like
+    if @product.users.include?(current_user)
+      @product.users.destroy(current_user)
+    else
+      @product.users << current_user
+    end
+    respond_to do |format|
+      format.html { redirect_to products_url, notice: 'ok' }
     end
   end
 
